@@ -50,6 +50,9 @@ const ConnectionErrors = JitsiMeetJS.errors.connection;
 const ConferenceEvents = JitsiMeetJS.events.conference;
 const ConferenceErrors = JitsiMeetJS.errors.conference;
 
+const ParticipantConnectionStatus
+    = JitsiMeetJS.constants.participantConnectionStatus;
+
 const TrackEvents = JitsiMeetJS.events.track;
 const TrackErrors = JitsiMeetJS.errors.track;
 
@@ -801,11 +804,27 @@ export default {
      * @param {string} id participant's identifier(MUC nickname)
      *
      * @returns {boolean|null} true if participant's connection is ok or false
-     * if the user is having connectivity issues.
+     * if the user is having connectivity issues. Returns null if there is no
+     * such participant.
      */
     isParticipantConnectionActive (id) {
         let participant = this.getParticipantById(id);
-        return participant ? participant.isConnectionActive() : null;
+        return participant
+            ? participant.getConnectionStatus()
+                === ParticipantConnectionStatus.ACTIVE : null;
+    },
+    /**
+     * Checks whether the user identified by given id is currently connected.
+     *
+     * @param {string} id participant's identifier(MUC nickname)
+     *
+     * @returns {boolean|null} true if participant's connection is ok or false
+     * if the user is having connectivity issues.
+     */
+    getParticipantConnectionStatus (id) {
+        let participant = this.getParticipantById(id);
+        return participant
+            ? participant.getConnectionStatus() : null;
     },
     /**
      * Gets the display name foe the <tt>JitsiParticipant</tt> identified by
@@ -1312,8 +1331,8 @@ export default {
 
         room.on(
             ConferenceEvents.PARTICIPANT_CONN_STATUS_CHANGED,
-            (id, isActive) => {
-                APP.UI.participantConnectionStatusChanged(id, isActive);
+            id => {
+                APP.UI.participantConnectionStatusChanged(id);
         });
         room.on(ConferenceEvents.DOMINANT_SPEAKER_CHANGED, (id) => {
             if (this.isLocalId(id)) {
